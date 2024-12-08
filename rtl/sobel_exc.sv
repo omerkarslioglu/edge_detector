@@ -238,7 +238,7 @@ assign mul_y = i_pixel_i * SOBEL_Y[srow][scolumn];
 assign sobel_out = abs_value(grad_x) + abs_value(grad_y);
 
 /* Absolute Value Function */
-function automatic logic signed [$bits(grad_x)-1:0] abs_value(input logic signed [$bits(grad_x)-1:0] input_num);
+function automatic logic signed [DATA_WIDTH+3:0] abs_value(input logic signed [DATA_WIDTH+3:0] input_num);
     return (input_num < 0) ? -input_num : input_num;
 endfunction
 
