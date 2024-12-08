@@ -78,10 +78,12 @@ initial begin
     @(posedge o_wr_en_o);
   end
   @(posedge clk_i);
+  @(posedge clk_i);
   addr_sel <= 1; 
-  repeat ((IMAGE_ROW_SIZE-2)*(IMAGE_COLUMN_SIZE-2)) begin
-    @(posedge clk_i);
+  @(posedge clk_i);
+  repeat (IMAGE_ROW_SIZE*IMAGE_COLUMN_SIZE) begin
     o_addr_cnt <= o_addr_cnt + 1;
+    @(posedge clk_i);
     $fdisplay(sobel_out, "%2h", o_mem_data);
   end
   $fclose(sobel_out);

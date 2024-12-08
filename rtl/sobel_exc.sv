@@ -111,7 +111,7 @@ always_ff @(posedge clk_i) begin
           writed_f <= 1;
           o_pixel_o <= (THRESHOLD > sobel_out) ? 255 : 0;
           //$display("sobel output data: %0d", sobel_out);
-          o_pixel_addr_o <= o_pixel_addr;//row_process_cnt * OUTPUT_COLUMN_SIZE + column_process_cnt; // Setting output image addres
+          o_pixel_addr_o <= o_pixel_addr; //row_process_cnt * OUTPUT_COLUMN_SIZE + column_process_cnt; // Setting output image addres
           if (column_process_cnt == LAST_OUTPUT_ROW_INDEX && row_process_cnt == LAST_OUTPUT_COLUMN_INDEX) finish_sobel_f <= 1; // if column and row counters are done, set sobel is done
           else finish_sobel_f <= '0;
         end else begin
@@ -140,16 +140,36 @@ always_ff @(posedge clk_i) begin
         end
         if (scolumn == 2 && srow == 1) state <= FIRST_STATE;
         // detect corner addresses:
-/*         if (writed_f && (column_process_cnt == 0 || column_process_cnt == LAST_OUTPUT_ROW_INDEX || row_process_cnt == 0 || row_process_cnt == LAST_OUTPUT_COLUMN_INDEX)) begin
+/*         if (writed_f && (column_process_cnt == 0 || column_process_cnt == LAST_OUTPUT_ROW_INDEX || row_process_cnt == 0 || row_process_cnt == LAST_OUTPUT_COLUMN_INDEX)) begin */
+        if (writed_f) begin
           writed_f <= 0;
-          o_wr_en_o <= 1;
-          o_pixel_addr_o <= o_pixel_addr_o - 1; // TODO: that's wrong
-          o_pixel_o <= o_pixel_o;
-        end else begin */
+          if (column_process_cnt == 0) begin 
+            o_pixel_addr_o <= o_pixel_addr_o - 1; // TODO: that's wrong
+            o_wr_en_o <= 1;
+            o_pixel_o <= o_pixel_o;
+          end else if (column_process_cnt == LAST_OUTPUT_ROW_INDEX) begin
+            o_pixel_addr_o <= o_pixel_addr_o + 1; // TODO: that's wrong
+            o_wr_en_o <= 1;
+            o_pixel_o <= o_pixel_o;
+          end else if (row_process_cnt == 0) begin
+            o_pixel_addr_o <= o_pixel_addr_o - IMAGE_COLUMN_SIZE; // TODO: that's wrong
+            o_wr_en_o <= 1;
+            o_pixel_o <= o_pixel_o;
+          end else if (row_process_cnt == LAST_OUTPUT_COLUMN_INDEX) begin
+            o_pixel_addr_o <= o_pixel_addr_o + IMAGE_COLUMN_SIZE; // TODO: that's wrong
+            o_wr_en_o <= 1;
+            o_pixel_o <= o_pixel_o;
+          end else begin
+            o_pixel_addr_o <= 0; // TODO: that's wrong
+            o_wr_en_o <= 0;
+            o_pixel_o <= 0;
+          end
+        end else begin
+          writed_f <= 0;
           o_wr_en_o <= '0;
           o_pixel_o <= '0;
           o_pixel_addr_o <= '0;
-//        end
+        end
         finish_sobel_f <= '0;
       end
     endcase 
@@ -189,7 +209,7 @@ always_ff @(posedge clk_i) begin
     row_process_cnt <= '0;
     column_process_cnt <= '0;
   end else begin
-    if(o_wr_en_o) begin
+    if(writed_f) begin
       if(row_process_cnt != (LAST_OUTPUT_COLUMN_INDEX)) begin
         row_process_cnt <= increased_row_process_cnt;
       end else begin
