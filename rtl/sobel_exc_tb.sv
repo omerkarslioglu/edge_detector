@@ -5,19 +5,24 @@ module sobel_exc_tb
   import mem_config_pkg::*;
 ();
 
-logic                    clk_i = 0;
-logic                    rst_ni = 0;
-logic                    start_i = 0;
-logic[   DATA_WIDTH-1:0] i_pixel_i;
-logic[   ADDR_WIDTH-1:0] i_pixel_addr_o;
-logic                    o_wr_en_o;
-logic[   DATA_WIDTH-1:0] o_pixel_o;
-logic[   ADDR_WIDTH-1:0] o_pixel_addr_o;
-logic                    finish_o;
+logic                     clk_i = 0;
+logic                     rst_ni = 0;
+logic                     start_i = 0;
+logic [   DATA_WIDTH-1:0] i_pixel_i;
+logic [   ADDR_WIDTH-1:0] i_pixel_addr_o;
+logic                     o_wr_en_o;
+logic [   DATA_WIDTH-1:0] o_pixel_o;
+logic [   ADDR_WIDTH-1:0] o_pixel_addr_o;
+logic                     finish_o;
 
 int sobel_out;
-
 int write_cnt = 0;
+logic addr_sel;
+
+logic [   ADDR_WIDTH-1:0] o_addr_cnt = 0;
+logic [   ADDR_WIDTH-1:0] o_mem_addr;
+logic [   DATA_WIDTH-1:0] o_mem_data;
+
 
 initial begin
   forever #1 clk_i <= ~clk_i;
@@ -35,7 +40,7 @@ sobel_exc exc(
   .finish_o(finish_o)
 );
 
-memory mem(
+input_memory i_mem(
   .clk_i(clk_i),
   .wr_en_i(), // no need write since it is input file
   .addr_i(i_pixel_addr_o),
@@ -43,7 +48,23 @@ memory mem(
   .data_o(i_pixel_i)
 );
 
+output_memory o_mem(
+  .clk_i(clk_i),
+  .wr_en_i(o_wr_en_o),
+  .addr_i(o_mem_addr),
+  .data_i(o_pixel_o),
+  .data_o(o_mem_data)
+);
+
+always_comb begin
+  case(addr_sel)
+    0: o_mem_addr = o_pixel_addr_o;
+    1: o_mem_addr = o_addr_cnt;
+  endcase
+end
+
 initial begin
+  addr_sel <= 0;
   sobel_out = $fopen(OUTPUT_FILE_PATH, "w");
   if(!sobel_out) $error("[ERROR-02]     IN MEMORY - Output file was not opened!");
 
@@ -55,7 +76,13 @@ initial begin
   @(posedge clk_i);
   while(!finish_o) begin
     @(posedge o_wr_en_o);
-      $fdisplay(sobel_out, "%2h", o_pixel_o);
+  end
+  @(posedge clk_i);
+  addr_sel <= 1; 
+  repeat ((IMAGE_ROW_SIZE-2)*(IMAGE_COLUMN_SIZE-2)) begin
+    @(posedge clk_i);
+    o_addr_cnt <= o_addr_cnt + 1;
+    $fdisplay(sobel_out, "%2h", o_mem_data);
   end
   $fclose(sobel_out);
 

@@ -39,6 +39,8 @@ logic [1:0] state;
 logic [ADDR_WIDTH-1:0] i_increased_pixel_addr;
 logic signed [DATA_WIDTH+3:0] mul_x, mul_y;
 logic signed [DATA_WIDTH+3:0] grad_x, grad_y;
+logic signed [DATA_WIDTH+3:0] grad_x_buff, grad_y_buff;
+logic signed [DATA_WIDTH+3:0] grad_x_mux, grad_y_mux;
 logic signed [DATA_WIDTH+3:0] sum_grad_and_mul_x, sum_grad_and_mul_y;
 logic [2:0] scolumn, srow;
 logic [2:0] increased_scolumn, increased_srow;
@@ -51,8 +53,12 @@ logic signed [DATA_WIDTH+3:0] sobel_out;
 logic [($clog2(IMAGE_COLUMN_SIZE) + $clog2(IMAGE_ROW_SIZE)-1):0] mul_of_inc_row_process_cnt_and_i_column_size;
 logic [ADDR_WIDTH-1:0] o_pixel_addr;
 logic writed_f;
+logic grads_buffered_flag;
 
 assign finish_o = finish_sobel_f; // TODO: it will become fixed
+
+assign grad_x_mux = (grads_buffered_flag) ? grad_x_buff : grad_x;
+assign grad_y_mux = (grads_buffered_flag) ? grad_y_buff : grad_y;
 
 /* posedge detector for start signal */
 always_ff @(posedge clk_i) begin
@@ -75,7 +81,9 @@ always_ff @(posedge clk_i) begin
     o_pixel_addr_o <= '0;
     o_wr_en_o <= 1'b0;
     writed_f <= 0;
+    grads_buffered_flag <= 0;
   end else begin
+    grads_buffered_flag <= 0;
     case(state)
       IDLE: begin
         if (start_f) state <= START_STATE; 
@@ -89,8 +97,11 @@ always_ff @(posedge clk_i) begin
         scolumn <= 0;
       end
       FIRST_STATE: begin
-        grad_x <= mul_x;
-        grad_y <= mul_y;
+        grad_x <= sum_grad_and_mul_x;
+        grad_y <= sum_grad_and_mul_y;
+        grad_x_buff <= mul_x;
+        grad_y_buff <= mul_y;
+        grads_buffered_flag <= 1;
         srow <= increased_srow;
         scolumn <= '0;
         state <= SECOND_STATE;
@@ -112,8 +123,14 @@ always_ff @(posedge clk_i) begin
         end
       end
       SECOND_STATE: begin
-        grad_x <= sum_grad_and_mul_x;
-        grad_y <= sum_grad_and_mul_y;
+        grads_buffered_flag <= 0;
+        if(!grads_buffered_flag) begin
+          grad_x <= sum_grad_and_mul_x;
+          grad_y <= sum_grad_and_mul_y;
+        end else begin
+          grad_x <= mul_x;
+          grad_y <= mul_y;
+        end
         if (srow != 2) begin 
           srow <= increased_srow;
           scolumn <= scolumn;
@@ -187,8 +204,8 @@ assign increased_row_process_cnt = row_process_cnt + 1;
 assign increased_column_process_cnt = column_process_cnt + 1;
 assign increased_scolumn = scolumn + 1;
 assign increased_srow = srow + 1;
-assign sum_grad_and_mul_x = mul_x + grad_x;
-assign sum_grad_and_mul_y = mul_y + grad_y;
+assign sum_grad_and_mul_x = mul_x + grad_x_mux;
+assign sum_grad_and_mul_y = mul_y + grad_y_mux;
 assign i_increased_pixel_addr = i_pixel_addr_o + 1;
 assign mul_of_inc_row_process_cnt_and_i_column_size = increased_row_process_cnt * IMAGE_COLUMN_SIZE;
 
