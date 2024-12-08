@@ -29,6 +29,7 @@ localparam logic signed [3:0] SOBEL_Y [0:2][0:2] = '{
 localparam OUTPUT_COLUMN_SIZE = IMAGE_COLUMN_SIZE - 2;
 localparam LAST_OUTPUT_COLUMN_INDEX = IMAGE_COLUMN_SIZE - 3;
 localparam LAST_OUTPUT_ROW_INDEX = IMAGE_ROW_SIZE - 3;
+localparam IMAGE_SIZE = IMAGE_COLUMN_SIZE * IMAGE_ROW_SIZE;
 
 localparam IDLE = 2'b00;
 localparam START_STATE = 2'b01;
@@ -46,7 +47,6 @@ logic [2:0] scolumn, srow;
 logic [2:0] increased_scolumn, increased_srow;
 logic start_f;
 logic start_q;
-logic finish_sobel_f;
 logic [$clog2(IMAGE_COLUMN_SIZE)-1:0] column_process_cnt, increased_column_process_cnt;
 logic [$clog2(IMAGE_ROW_SIZE)-1:0] row_process_cnt, increased_row_process_cnt;
 logic signed [DATA_WIDTH+3:0] sobel_out;
@@ -54,8 +54,9 @@ logic [($clog2(IMAGE_COLUMN_SIZE) + $clog2(IMAGE_ROW_SIZE)-1):0] mul_of_inc_row_
 logic [ADDR_WIDTH-1:0] o_pixel_addr;
 logic writed_f;
 logic grads_buffered_flag;
-
-assign finish_o = finish_sobel_f; // TODO: it will become fixed
+logic [ADDR_WIDTH-1:0] o_pixel_addr_buff_for_corner;
+logic writed_f2; // flag for corners
+logic writed_f3; // flag for corners
 
 assign grad_x_mux = (grads_buffered_flag) ? grad_x_buff : grad_x;
 assign grad_y_mux = (grads_buffered_flag) ? grad_y_buff : grad_y;
@@ -68,12 +69,20 @@ end
 
 assign start_f = start_i & !start_q;
 
-/* Sobel Algorithm */
+/* setting finish signal */
 always_ff @(posedge clk_i) begin
   if (!rst_ni) begin
+    finish_o <= 0;
+  end else begin
+    finish_o <= (o_pixel_addr_o == (IMAGE_SIZE - 1)) ? 1 : 0;
+  end
+end
+
+/* Sobel Algorithm */
+always_ff @(posedge clk_i) begin
+  if (!rst_ni | finish_o) begin
     grad_x <= '0;
     grad_y <= '0;
-    finish_sobel_f <= '0;
     scolumn <= '0;
     srow <= '0;
     state <= IDLE;
@@ -82,6 +91,7 @@ always_ff @(posedge clk_i) begin
     o_wr_en_o <= 1'b0;
     writed_f <= 0;
     grads_buffered_flag <= 0;
+    o_pixel_addr_buff_for_corner <= 0;
   end else begin
     grads_buffered_flag <= 0;
     case(state)
@@ -110,16 +120,12 @@ always_ff @(posedge clk_i) begin
           o_wr_en_o <= 1;
           writed_f <= 1;
           o_pixel_o <= (sobel_out > THRESHOLD) ? 'd0 : 'd255;
-          //$display("sobel output data: %0d", sobel_out);
-          o_pixel_addr_o <= o_pixel_addr; //row_process_cnt * OUTPUT_COLUMN_SIZE + column_process_cnt; // Setting output image addres
-          if (column_process_cnt == LAST_OUTPUT_ROW_INDEX && row_process_cnt == LAST_OUTPUT_COLUMN_INDEX) finish_sobel_f <= 1; // if column and row counters are done, set sobel is done
-          else finish_sobel_f <= '0;
+          o_pixel_addr_o <= o_pixel_addr; // row_process_cnt * OUTPUT_COLUMN_SIZE + column_process_cnt; // Setting output image addres
         end else begin
           o_wr_en_o <= '0;
           writed_f <= 0;
           o_pixel_o <= '0;
           o_pixel_addr_o <= '0;
-          finish_sobel_f <= '0;
         end
       end
       SECOND_STATE: begin
@@ -139,26 +145,28 @@ always_ff @(posedge clk_i) begin
           scolumn <= increased_scolumn;
         end
         if (scolumn == 2 && srow == 1) state <= FIRST_STATE;
-        // detect corner addresses:
-/*         if (writed_f && (column_process_cnt == 0 || column_process_cnt == LAST_OUTPUT_ROW_INDEX || row_process_cnt == 0 || row_process_cnt == LAST_OUTPUT_COLUMN_INDEX)) begin */
+        // detect addresses of corners and edges:
         if (writed_f) begin
           writed_f <= 0;
-          if (column_process_cnt == 0) begin 
-            // if (o_pixel_addr_o == IMAGE_COLUMN_SIZE + 1) writed_f2 <= 1; // for edges, writing operation should become more then one (left-up) o_pixel_addr_o - IMAGEIMAGE_COLUMN_SIZE ; write_f2=0 write_f3 = 1 ; o_pixel_addr_o - 1 write_f3=0
+          if (column_process_cnt == 0) begin // up edge
+            if (o_pixel_addr_o == IMAGE_COLUMN_SIZE + 1) writed_f2 <= 1; // for edges, writing operation should become more then one // (left-up corner) o_pixel_addr_o - IMAGEIMAGE_COLUMN_SIZE ; write_f2=0 write_f3 = 1 ; o_pixel_addr_o - 1 write_f3=0
+            else if (o_pixel_addr_o == ((IMAGE_COLUMN_SIZE - 2) * (IMAGE_ROW_SIZE) + 1)) writed_f2 <= 1; // for edges, writing operation should become more then one // (right-up corner) o_pixel_addr_o + IMAGE_COLUMN_SIZE; write_f2=0 write_f3=0; o_pixel_addr_o = o_pixel_addr_o -1 write_f3=0
+            o_pixel_addr_buff_for_corner <= o_pixel_addr_o;
             o_pixel_addr_o <= o_pixel_addr_o - 1;
             o_wr_en_o <= 1;
             o_pixel_o <= o_pixel_o;
-          end else if (column_process_cnt == LAST_OUTPUT_ROW_INDEX) begin
-            // if (o_pixel_addr_o == (IMAGE_COLUMN_SIZE-1)*(IMAGE_ROW_SIZE) + 1) writed_f2 <= 1; // for edges, writing operation should become more then one (right-up corner) o_pixel_addr_o + IMAGE_COLUMN_SIZE; write_f2=0 write_f3=0; o_pixel_addr_o = o_pixel_addr_o -1 write_f3=0
+          end else if (column_process_cnt == LAST_OUTPUT_ROW_INDEX) begin // down edge
+            if (o_pixel_addr_o == ((IMAGE_COLUMN_SIZE * 2) - 2)) writed_f2 <= 1; // for edges, writing operation should become more then one // left-down corner
+            else if (o_pixel_addr_o == ((IMAGE_COLUMN_SIZE - 2) * (IMAGE_ROW_SIZE) + (IMAGE_COLUMN_SIZE - 2))) writed_f2 <= 1; // for edges, writing operation should become more then one // right-down-corner
+            o_pixel_addr_buff_for_corner <= o_pixel_addr_o;
             o_pixel_addr_o <= o_pixel_addr_o + 1; 
             o_wr_en_o <= 1;
             o_pixel_o <= o_pixel_o;
-          end else if (row_process_cnt == 0) begin
-            // if (o_pixel_addr_o == (IMAGE_COLUMN_SIZE-1)*(IMAGE_ROW_SIZE) + 1) writed_f2 <= 1; // for edges, writing operation should become more then one
+          end else if (row_process_cnt == 0) begin // left edge
             o_pixel_addr_o <= o_pixel_addr_o - IMAGE_COLUMN_SIZE;
             o_wr_en_o <= 1;
             o_pixel_o <= o_pixel_o;
-          end else if (row_process_cnt == LAST_OUTPUT_COLUMN_INDEX) begin
+          end else if (row_process_cnt == LAST_OUTPUT_COLUMN_INDEX) begin // right edge
             o_pixel_addr_o <= o_pixel_addr_o + IMAGE_COLUMN_SIZE;
             o_wr_en_o <= 1;
             o_pixel_o <= o_pixel_o;
@@ -167,13 +175,68 @@ always_ff @(posedge clk_i) begin
             o_wr_en_o <= 0;
             o_pixel_o <= 0;
           end
+        end else if (writed_f2) begin
+          writed_f2 <= 0;
+          if (o_pixel_addr_buff_for_corner == IMAGE_COLUMN_SIZE + 1) begin
+            o_wr_en_o <= 1;
+            writed_f3 <= 1;
+            o_pixel_addr_o <= o_pixel_addr_buff_for_corner - IMAGE_COLUMN_SIZE; // left side of the (left-up) out corner
+            o_pixel_o <= o_pixel_o;
+            o_pixel_addr_buff_for_corner <= o_pixel_addr_buff_for_corner;
+          end else if (o_pixel_addr_buff_for_corner == ((IMAGE_COLUMN_SIZE-2) * (IMAGE_ROW_SIZE) + 1)) begin
+            o_wr_en_o <= 1;
+            writed_f3 <= 1;
+            o_pixel_addr_o <= o_pixel_addr_buff_for_corner + IMAGE_COLUMN_SIZE; // rigth side of the (right-up) out corner
+            o_pixel_o <= o_pixel_o;
+            o_pixel_addr_buff_for_corner <= o_pixel_addr_buff_for_corner;
+          end else if (o_pixel_addr_buff_for_corner == ((IMAGE_COLUMN_SIZE * 2) - 2)) begin
+            o_wr_en_o <= 1;
+            writed_f3 <= 1;
+            o_pixel_addr_o <= o_pixel_addr_buff_for_corner - IMAGE_COLUMN_SIZE;  // left-side of the (right-down) out corner
+            o_pixel_o <= o_pixel_o;
+            o_pixel_addr_buff_for_corner <= o_pixel_addr_buff_for_corner;
+          end else if (o_pixel_addr_buff_for_corner == (IMAGE_COLUMN_SIZE - 2) * (IMAGE_ROW_SIZE) + (IMAGE_COLUMN_SIZE - 2)) begin
+            o_wr_en_o <= 1;
+            writed_f3 <= 1;
+            o_pixel_addr_o <= o_pixel_addr_buff_for_corner + IMAGE_COLUMN_SIZE;  // right-side of the (right-down) out corner
+            o_pixel_o <= o_pixel_o;
+            o_pixel_addr_buff_for_corner <= o_pixel_addr_buff_for_corner;
+          end else begin
+            o_wr_en_o <= 0;
+            writed_f3 <= 0;
+            o_pixel_o <= 0;
+            o_pixel_addr_o <= 0;
+          end
+        end else if (writed_f3) begin
+          writed_f3 <= 0;
+          if (o_pixel_addr_buff_for_corner == IMAGE_COLUMN_SIZE + 1) begin
+            o_wr_en_o <= 1;
+            o_pixel_addr_o <= 0; // left side of the (left-up) corner
+            o_pixel_o <= o_pixel_o;
+          end else if (o_pixel_addr_buff_for_corner == ((IMAGE_COLUMN_SIZE-2) * (IMAGE_ROW_SIZE) + 1)) begin
+            o_wr_en_o <= 1;
+            o_pixel_addr_o <= o_pixel_addr_buff_for_corner + (IMAGE_COLUMN_SIZE - 1); // rigth side of the (right-up) corner
+            o_pixel_o <= o_pixel_o;
+          end else if (o_pixel_addr_buff_for_corner == ((IMAGE_COLUMN_SIZE * 2) - 2)) begin
+            o_wr_en_o <= 1;
+            o_pixel_addr_o <= o_pixel_addr_buff_for_corner - (IMAGE_COLUMN_SIZE - 1);  // left-side of the (right-down) out corner
+            o_pixel_o <= o_pixel_o;
+          end else if (o_pixel_addr_buff_for_corner == (IMAGE_COLUMN_SIZE - 2) * (IMAGE_ROW_SIZE) + (IMAGE_COLUMN_SIZE - 2)) begin
+            o_wr_en_o <= 1;
+            o_pixel_addr_o <= o_pixel_addr_buff_for_corner + (IMAGE_COLUMN_SIZE + 1);  // right-side of the (right-down) out corner
+            o_pixel_o <= o_pixel_o;
+          end else begin
+            o_wr_en_o <= 0;
+            writed_f2 <= 0;
+            o_pixel_o <= 0;
+            o_pixel_addr_o <= 0;
+          end
         end else begin
           writed_f <= 0;
           o_wr_en_o <= '0;
           o_pixel_o <= '0;
           o_pixel_addr_o <= '0;
         end
-        finish_sobel_f <= '0;
       end
     endcase 
   end
@@ -181,7 +244,7 @@ end
 
 /* Setting input image mem addres, when addr is set, data comes one clock period after */
 always_ff @(posedge clk_i) begin
-  if (!rst_ni) begin
+  if (!rst_ni | finish_o) begin
     i_pixel_addr_o <= '0;
   end else begin
     if(state == START_STATE) begin
@@ -199,7 +262,7 @@ end
 
 /* Output image address */
 always_ff @(posedge clk_i) begin
-  if (!rst_ni) begin
+  if (!rst_ni | finish_o) begin
     o_pixel_addr <= '0;
   end else begin
     if (srow==2 && scolumn==0) o_pixel_addr <= i_increased_pixel_addr;
@@ -208,7 +271,7 @@ end
 
 /* Counters for indexing */
 always_ff @(posedge clk_i) begin
-  if(!rst_ni) begin
+  if(!rst_ni | finish_o) begin
     row_process_cnt <= '0;
     column_process_cnt <= '0;
   end else begin

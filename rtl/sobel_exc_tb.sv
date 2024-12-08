@@ -82,9 +82,9 @@ initial begin
   repeat(2) @(posedge clk_i);
   start_i <= 1;
   @(posedge clk_i);
-  while(!finish_o) begin
-    @(posedge o_wr_en_o);
-  end
+  
+  @(posedge finish_o);
+  
   @(posedge clk_i);
   @(posedge clk_i);
   addr_sel <= 1; 

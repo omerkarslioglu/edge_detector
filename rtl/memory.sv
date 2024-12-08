@@ -49,9 +49,9 @@ module output_memory
 (* ram_style="block" *)
 logic [DATA_WIDTH-1:0] mem [2**ADDR_WIDTH-1:0];
 
-initial begin
+/* initial begin
   foreach (mem[i]) mem[i] = 0;
-end
+end */
 
 always_ff @(posedge clk_i) begin
   if (wr_en_i) mem[addr_i] <= data_i;
