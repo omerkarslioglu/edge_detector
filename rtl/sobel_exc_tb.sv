@@ -18,6 +18,7 @@ logic                     finish_o;
 int sobel_out;
 int write_cnt = 0;
 logic addr_sel;
+logic o_mem_wr_en = 0;
 
 logic [   ADDR_WIDTH-1:0] o_addr_cnt = 0;
 logic [   ADDR_WIDTH-1:0] o_mem_addr;
@@ -50,7 +51,7 @@ input_memory i_mem(
 
 output_memory o_mem(
   .clk_i(clk_i),
-  .wr_en_i(o_wr_en_o),
+  .wr_en_i(o_mem_wr_en),
   .addr_i(o_mem_addr),
   .data_i(o_pixel_o),
   .data_o(o_mem_data)
@@ -60,6 +61,13 @@ always_comb begin
   case(addr_sel)
     0: o_mem_addr = o_pixel_addr_o;
     1: o_mem_addr = o_addr_cnt;
+  endcase
+end
+
+always_comb begin
+  case(addr_sel)
+    0: o_mem_wr_en = o_wr_en_o;
+    1: o_mem_wr_en = 0;
   endcase
 end
 

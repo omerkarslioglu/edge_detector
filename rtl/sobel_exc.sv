@@ -5,7 +5,7 @@ module sobel_exc
   input                                 clk_i, 
   input                                 rst_ni,
   input                                 start_i,
-  input             [   DATA_WIDTH-1:0] i_pixel_i,
+  input signed      [   DATA_WIDTH-1:0] i_pixel_i,
   output logic      [   ADDR_WIDTH-1:0] i_pixel_addr_o,
   output logic                          o_wr_en_o,
   output logic      [   DATA_WIDTH-1:0] o_pixel_o,
@@ -109,7 +109,7 @@ always_ff @(posedge clk_i) begin
           srow <= 0;
           o_wr_en_o <= 1;
           writed_f <= 1;
-          o_pixel_o <= (THRESHOLD > sobel_out) ? 255 : 0;
+          o_pixel_o <= (sobel_out > THRESHOLD) ? 'd0 : 'd255;
           //$display("sobel output data: %0d", sobel_out);
           o_pixel_addr_o <= o_pixel_addr; //row_process_cnt * OUTPUT_COLUMN_SIZE + column_process_cnt; // Setting output image addres
           if (column_process_cnt == LAST_OUTPUT_ROW_INDEX && row_process_cnt == LAST_OUTPUT_COLUMN_INDEX) finish_sobel_f <= 1; // if column and row counters are done, set sobel is done
@@ -144,23 +144,26 @@ always_ff @(posedge clk_i) begin
         if (writed_f) begin
           writed_f <= 0;
           if (column_process_cnt == 0) begin 
-            o_pixel_addr_o <= o_pixel_addr_o - 1; // TODO: that's wrong
+            // if (o_pixel_addr_o == IMAGE_COLUMN_SIZE + 1) writed_f2 <= 1; // for edges, writing operation should become more then one (left-up) o_pixel_addr_o - IMAGEIMAGE_COLUMN_SIZE ; write_f2=0 write_f3 = 1 ; o_pixel_addr_o - 1 write_f3=0
+            o_pixel_addr_o <= o_pixel_addr_o - 1;
             o_wr_en_o <= 1;
             o_pixel_o <= o_pixel_o;
           end else if (column_process_cnt == LAST_OUTPUT_ROW_INDEX) begin
-            o_pixel_addr_o <= o_pixel_addr_o + 1; // TODO: that's wrong
+            // if (o_pixel_addr_o == (IMAGE_COLUMN_SIZE-1)*(IMAGE_ROW_SIZE) + 1) writed_f2 <= 1; // for edges, writing operation should become more then one (right-up corner) o_pixel_addr_o + IMAGE_COLUMN_SIZE; write_f2=0 write_f3=0; o_pixel_addr_o = o_pixel_addr_o -1 write_f3=0
+            o_pixel_addr_o <= o_pixel_addr_o + 1; 
             o_wr_en_o <= 1;
             o_pixel_o <= o_pixel_o;
           end else if (row_process_cnt == 0) begin
-            o_pixel_addr_o <= o_pixel_addr_o - IMAGE_COLUMN_SIZE; // TODO: that's wrong
+            // if (o_pixel_addr_o == (IMAGE_COLUMN_SIZE-1)*(IMAGE_ROW_SIZE) + 1) writed_f2 <= 1; // for edges, writing operation should become more then one
+            o_pixel_addr_o <= o_pixel_addr_o - IMAGE_COLUMN_SIZE;
             o_wr_en_o <= 1;
             o_pixel_o <= o_pixel_o;
           end else if (row_process_cnt == LAST_OUTPUT_COLUMN_INDEX) begin
-            o_pixel_addr_o <= o_pixel_addr_o + IMAGE_COLUMN_SIZE; // TODO: that's wrong
+            o_pixel_addr_o <= o_pixel_addr_o + IMAGE_COLUMN_SIZE;
             o_wr_en_o <= 1;
             o_pixel_o <= o_pixel_o;
           end else begin
-            o_pixel_addr_o <= 0; // TODO: that's wrong
+            o_pixel_addr_o <= 0;
             o_wr_en_o <= 0;
             o_pixel_o <= 0;
           end
@@ -229,8 +232,8 @@ assign sum_grad_and_mul_y = mul_y + grad_y_mux;
 assign i_increased_pixel_addr = i_pixel_addr_o + 1;
 assign mul_of_inc_row_process_cnt_and_i_column_size = increased_row_process_cnt * IMAGE_COLUMN_SIZE;
 
-assign mul_x = $signed(i_pixel_i) * $signed(SOBEL_X[srow][scolumn]);
-assign mul_y = $signed(i_pixel_i) * $signed(SOBEL_Y[srow][scolumn]);
+assign mul_x = i_pixel_i * SOBEL_X[srow][scolumn];
+assign mul_y = i_pixel_i * SOBEL_Y[srow][scolumn];
 
 assign sobel_out = abs_value(grad_x) + abs_value(grad_y);
 
