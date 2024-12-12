@@ -1,11 +1,29 @@
-## SOBEL EXECUTION UNIT
+# SOBEL EXECUTION UNIT
 Synthesizable sobel execution unit SystemVerilog hardware design.
 
 This sobel edge detector hardware design consists of two block memories and the main module, the sobel execution unit. Data can be loaded from the input memory, and the resulting image can be read from the output memory. These memories have a single port and a byte data width. The execution process starts with the rising edge of the ``start_i`` signal after the system is reset. The ``finish_o`` signal indicates that the process is complete. Since the data is read from the memories byte by byte, the process process varies according to the size of the image. The block level design is as follows:
 
 <img title="" alt="Sobel HW Design Block" src="/docs/images/sobel_exc_block.png">
 
-To run the design on the simulation tools:
+### About Sobel Algorithm
+
+Sobel edge detection algorithm calculates derivatives of an NxN input image with 3x3 Kx and 3x3 Ky kernels as shown below.
+
+<img title="" alt="Kx and Ky Matrices" src="/docs/images/kx_ky_windows.png">
+
+Then, the magnitude is calculated as shown below.
+
+<img title="" alt="Sobel Output" src="/docs/images/sobel_out.png">
+
+Finally, thresholding is applied in order to eliminate the noise on the edges.
+
+<img title="" alt="Thresholding" src="/docs/images/thresholding.png">
+
+Sobel edge detection algorithm is applied to 3x3 windows for each pixel in the input image as shown below.
+
+<img title="" alt="Windowing Operation" src="/docs/images/windowing.png">
+
+### To run the design on the simulation tools:
 In the ``rtl/pkg/sobel_config_pkg.sv`` file, the paths of the input and output image files and the dimensions of the input image must be set.
 
 ```
