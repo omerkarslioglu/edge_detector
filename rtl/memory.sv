@@ -19,7 +19,7 @@ int initial_file;
 
 initial begin
   initial_file =  $fopen(INPUT_FILE_PATH, "r");
-  if(!initial_file) $error("[ERROR-01]     IN MEMORY - Input file was not opened!");
+  // if(!initial_file) $error("[ERROR-01]     IN MEMORY - Input file was not opened!"); // comment in to sythesis
   /* load image */
   $readmemh(INPUT_FILE_PATH, mem);
   /* check mem */
@@ -48,10 +48,6 @@ module output_memory
 
 (* ram_style="block" *)
 logic [DATA_WIDTH-1:0] mem [2**ADDR_WIDTH-1:0];
-
-/* initial begin
-  foreach (mem[i]) mem[i] = 0;
-end */
 
 always_ff @(posedge clk_i) begin
   if (wr_en_i) mem[addr_i] <= data_i;

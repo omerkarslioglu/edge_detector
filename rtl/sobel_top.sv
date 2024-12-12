@@ -23,7 +23,6 @@ logic [   ADDR_WIDTH-1:0] i_mem_addr;
 logic [   DATA_WIDTH-1:0] o_pixel;
 logic [   ADDR_WIDTH-1:0] o_pixel_addr;
 logic [   ADDR_WIDTH-1:0] o_mem_addr;
-logic [   DATA_WIDTH-1:0] o_mem_data;
 logic                     o_mem_wr_en;
 logic                     o_wr_en; // write enable signal to output memory it comes from sobel exc. unit
 

@@ -1,5 +1,5 @@
 # SOBEL EXECUTION UNIT
-Synthesizable sobel execution unit SystemVerilog hardware design.
+The design synthesizable sobel execution unit SystemVerilog hardware design for FPGAs.
 
 This sobel edge detector hardware design consists of two block memories and the main module, the sobel execution unit. Data can be loaded from the input memory, and the resulting image can be read from the output memory. These memories have a single port and a byte data width. The execution process starts with the rising edge of the ``start_i`` signal after the system is reset. The ``finish_o`` signal indicates that the process is complete. Since the data is read from the memories byte by byte, the process process varies according to the size of the image. The block level design is as follows:
 
@@ -33,8 +33,11 @@ File tree:
     │   lena_hex.txt
     │   output_test_file.txt
     └───matlab
-            ee562_project.m
-            lena.mat
+    │       ee562_project.m
+    │       lena.mat
+    └───vivado
+            basys3_synthesis_reports
+            constraint_sobel.xdc
 ```
 
 ### About Sobel Algorithm
