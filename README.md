@@ -7,6 +7,36 @@ This sobel edge detector hardware design consists of two block memories and the 
   <img title="" alt="Sobel HW Design Block" src="/docs/images/sobel_exc_block.png">
 </p>
 
+File tree:
+
+```
+│   
+├───docs
+│   │   sobel_exc_block.drawio
+│   │   
+│   └───images
+├───rtl
+│   │   memory.sv
+│   │   sobel_exc.sv
+│   │   sobel_top.sv
+│   │
+│   ├───pkg
+│   │       mem_config_pkg.sv
+│   │       sobel_config_pkg.sv
+│   │
+│   └───tb
+│           sobel_exc_tb.sv
+│           sobel_top_tb.sv
+└───src
+    │   experience.txt
+    │   input_test_file.txt
+    │   lena_hex.txt
+    │   output_test_file.txt
+    └───matlab
+            ee562_project.m
+            lena.mat
+```
+
 ### About Sobel Algorithm
 
 Sobel edge detection algorithm calculates derivatives of an NxN input image with 3x3 Kx and 3x3 Ky kernels as shown below.

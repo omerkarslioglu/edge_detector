@@ -34,6 +34,8 @@ sobel_top dut(
 );
 
 initial begin
+  addr_imem_i <= 0;
+  data_imem_i <= 0;
   addr_omem_i <= 0;
   rd_en_omem_i <= 0;
   wr_en_imem_i <= 0; // no need to write input image for simulation it takes image from txt file format.
