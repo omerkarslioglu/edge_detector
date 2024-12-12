@@ -122,7 +122,7 @@ Instead of a large image format, I chose a 5x5 matrix for the tests. I would get
 The design out for Lena image:
 
 <p align="center">
-  <img title="" alt="Reading indexes from an input image." src="/docs/images/sobel_out_image.png" width="400" height="auto">
+  <img title="" alt="Reading indexes from an input image." src="/docs/images/sobel_out_image.png" width="700" height="auto">
 </p>
 
 
