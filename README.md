@@ -12,14 +12,15 @@ This sobel edge detector hardware design consists of two block memories and the 
 Sobel edge detection algorithm calculates derivatives of an NxN input image with 3x3 Kx and 3x3 Ky kernels as shown below.
 
 <p align="center">
-  <img title="" alt="Kx and Ky Matrices" src="/docs/images/kx_ky_windows.png">
+  <img title="" alt="Kx and Ky Matrices" src="/docs/images/kx_ky_windows.png" width="350" height="auto">
 </p>
 
 Then, the magnitude is calculated as shown below.
 
 <p align="center">
-  <img title="" alt="Sobel Output" src="/docs/images/sobel_out.png" width="300" height="auto">
+  <img title="" alt="Sobel Output" src="/docs/images/sobel_out.png" width="350" height="auto">
 </p>
+
 Finally, thresholding is applied in order to eliminate the noise on the edges.
 
 <p align="center">
