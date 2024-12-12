@@ -30,7 +30,7 @@ Finally, thresholding is applied in order to eliminate the noise on the edges.
 Sobel edge detection algorithm is applied to 3x3 windows for each pixel in the input image as shown below.
 
 <p align="center">
-  <img title="" alt="Windowing Operation" src="/docs/images/windowing.png">
+  <img title="" alt="Windowing Operation" src="/docs/images/windowing.png"width="700" height="auto">
 </p>
 
 ### To run the design on the simulation tools:
