@@ -4,6 +4,16 @@ Synthesizable sobel execution unit SystemVerilog hardware design.
 To run the design on the simulation tools:
 In the ``rtl/pkg/sobel_config_pkg.sv`` file, the paths of the input and output image files and the dimensions of the input image must be set.
 
+```
+package  sobel_config_pkg;
+  localparam IMAGE_ROW_SIZE             = 256;
+  localparam IMAGE_COLUMN_SIZE          = 256;
+  localparam THRESHOLD                  = 150;
+  localparam string INPUT_FILE_PATH     = "__path__";
+  localparam string OUTPUT_FILE_PATH    = "__path__";
+endpackage
+```
+
 ## Working principle of the design:
 The two windows in the Sobel edge detector algorithm are defined in hardware as constants.
 These two windows are traversed line by line in order and grad_x and grad_y values ​​are calculated for all pixels except edge-corners.
@@ -27,6 +37,8 @@ The first 256 addresses in the memory belong to the first column of the image. T
 I would like to remind you again that the Sobel execution unit design proceeds by operating horizontally.
 The addresses to be read in the first window will be as follows: first, addresses 0, 1 and 2 are read.
 Immediately afterwards, addresses 256, 257 and 258 are read from the second column, then addresses 512, 513 and 514 are read to complete the reading of the first window addresses.
+
+<img title="" alt="Reading indexes from an input image." src="/docs/images/sobel_image_indexing.png">
 
 Then the window is shifted for the next operation. This time, the first column of the 3x3 matrix to be read is addresses 256, 257 and 258. This is how the input image is read from memory.
 
