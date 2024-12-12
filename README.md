@@ -17,7 +17,9 @@ Then, the magnitude is calculated as shown below.
 
 Finally, thresholding is applied in order to eliminate the noise on the edges.
 
-<img title="" alt="Thresholding" src="/docs/images/thresholding.png">
+<p align="center">
+  <img title="" alt="Thresholding" src="/docs/images/thresholding.png" width="200" height="auto">
+</p>
 
 Sobel edge detection algorithm is applied to 3x3 windows for each pixel in the input image as shown below.
 
