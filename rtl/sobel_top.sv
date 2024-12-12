@@ -20,7 +20,7 @@ module sobel_top
 logic [   DATA_WIDTH-1:0] i_pixel; // read data from input memory
 logic [   ADDR_WIDTH-1:0] i_pixel_addr; // addr that comes from sobel exc. unit
 logic [   ADDR_WIDTH-1:0] i_mem_addr;
-logic [   DATA_WIDTH-1:0] o_pixel_o;
+logic [   DATA_WIDTH-1:0] o_pixel;
 logic [   ADDR_WIDTH-1:0] o_pixel_addr;
 logic [   ADDR_WIDTH-1:0] o_mem_addr;
 logic [   DATA_WIDTH-1:0] o_mem_data;
@@ -34,7 +34,7 @@ sobel_exc exc(
   .i_pixel_i(i_pixel),
   .i_pixel_addr_o(i_pixel_addr),
   .o_wr_en_o(o_wr_en),
-  .o_pixel_o(o_pixel_o),
+  .o_pixel_o(o_pixel),
   .o_pixel_addr_o(o_pixel_addr),
   .finish_o(finish_o)
 );
@@ -51,7 +51,7 @@ output_memory o_mem(
   .clk_i(clk_i),
   .wr_en_i(o_mem_wr_en),
   .addr_i(o_mem_addr),
-  .data_i(o_pixel_o),
+  .data_i(o_pixel),
   .data_o(data_omem_o)
 );
 
