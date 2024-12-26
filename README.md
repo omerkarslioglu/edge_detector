@@ -122,7 +122,7 @@ I know where the window is with the column_process_cnt and row_process_cnt count
 ### Testing and verification:
 Instead of a large image format, I chose a 5x5 matrix for the tests. I would get a 3x3 result from this matrix. I wrote the matrices to the block ram in txt format. I performed the results of all operations (such as multiplication and grad values) with waveform tracking.Finally, I gave the Lena image as input. I wrote the data from the output to a txt file. Then it was examined in MATLAB. There are two testbenches. One of them is for just sobel execution unit (sobel_exc_tb.sv), the other one is for top level design (sobel_top_tb.sv). To run simulation, you can use top level testbench.
 
-The design out for Lena image:
+The design out for an image:
 
 <p align="center">
   <img title="" alt="Reading indexes from an input image." src="/docs/images/sobel_out_image.png" width="650" height="auto">
